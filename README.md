@@ -3,9 +3,10 @@
 A Python-based network automation project that simplifies BGP and OSPF configuration deployment using **Jinja2**, **Netmiko**, and structured **JSON inventories**.  
 It is designed for scalability, separation of concerns, and easy customization across multiple network environments.
 
-## 🖼️ Network Topology
+## 🖼️ Network Diagram
 
-![Network Diagram](Network_Topology/Network_Diagram.png)
+![Network Diagram](Network%20Topology/Network%20Diagram.png)
+
 ---
 
 ## 🧠 Overview
