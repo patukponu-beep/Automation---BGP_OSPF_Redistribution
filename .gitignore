@@ -1,0 +1,4 @@
+# Git ignore file 
+venv/
+.idea/
+Saved_render_config/

@@ -1,0 +1,30 @@
+{% if device.redistribution is defined%}
+{#----REDISTRIBUTION BGP INTO OSPF ------#}
+    {% if device.redistribution.bgp_to_ospf | default(false) %}
+    router ospf {{device.ospf.process_id}}
+        {% if device.asn is defined %}
+        redistribute bgp {{device.asn}} metric-type 1 subnets
+        {% endif %}
+    {% endif %}
+
+    {#---REDISTRTIBUTION OSPF INTO BGP-----#}
+
+    {% if device.redistribution.ospf_to_bgp | default(false) %}
+    router bgp {{device.asn}}
+        {% if device.ospf is defined %}
+
+            {% if device.role == "core_router" %}
+            redistribute ospf {{ device.ospf.process_id}}
+            {% endif %}
+        
+   
+            {% if device.role == "edge_router" %}
+                {% for adv in device.bgp.advertise_prefixes | default([]) %}
+                {% set ip = adv | ipaddr %}
+                network {{ ip.ip }} mask {{ ip.netmask }}
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+
+{% endif %}

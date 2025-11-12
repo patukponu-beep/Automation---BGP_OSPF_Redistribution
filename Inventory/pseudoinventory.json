@@ -1,0 +1,136 @@
+{
+  "policy": { "ospf_area_default": 0, "redist_tag": 100, "bgp_to_ospf_metric": 20 },
+  "devices": {
+    "R1": {
+      "hostname": "R1",
+      "role": "edge_router",
+      "asn": 65001,
+      "loopback": "1.1.1.1/32",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.153", "username": "", "password": "", "secret": "" },
+      "links": [
+        { "name": "Gi0/1", "ip": "10.1.2.1/30", "desc": "to R2", "peer": "R2", "peer_intf": "Gi0/1" },
+        { "name": "Gi0/3", "ip": "10.1.3.1/30", "desc": "to R3", "peer": "R3", "peer_intf": "Gi0/3" }
+      ],
+      "sublinks": [
+        { "name": "Gi0/0.10", "vlan_id": 10, "ip": "192.168.1.254/24", "desc": "SITE1 VLAN10 gateway" },
+        { "name": "Gi0/0.20", "vlan_id": 20, "ip": "172.16.1.254/24", "desc": "SITE1 VLAN20 gateway" }
+      ],
+      "vlans": { "10": { "name": "VLAN10_SITE1" }, "20": { "name": "VLAN20_SITE1" } },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Gi0/0.10", "Gi0/0.20"] },
+      "bgp": {
+        "neighbors": [
+          { "peer_ip": "10.1.2.2", "remote_as": 65002 },
+          { "peer_ip": "10.1.3.2", "remote_as": 65003 }
+        ],
+        "advertise_prefixes": ["192.168.1.0/24", "172.16.1.0/24"]
+      },
+      "redistribution": { "ospf_to_bgp": true, "bgp_to_ospf": true }
+    },
+
+    "R2": {
+      "hostname": "R2",
+      "role": "edge_router",
+      "asn": 65002,
+      "loopback": "2.2.2.2/32",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.158", "username": "", "password": "", "secret": "" },
+      "links": [
+        { "name": "Gi0/1", "ip": "10.1.2.2/30", "desc": "to R1", "peer": "R1", "peer_intf": "Gi0/1" },
+        { "name": "Gi0/2", "ip": "10.2.3.1/30", "desc": "to R3", "peer": "R3", "peer_intf": "Gi0/2" }
+      ],
+      "sublinks": [
+        { "name": "Gi0/0.10", "vlan_id": 10, "ip": "192.168.2.254/24", "desc": "SITE2 VLAN10 gateway" },
+        { "name": "Gi0/0.20", "vlan_id": 20, "ip": "172.16.2.254/24", "desc": "SITE2 VLAN20 gateway" }
+      ],
+      "vlans": { "10": { "name": "VLAN10_SITE2" }, "20": { "name": "VLAN20_SITE2" } },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Gi0/0.10", "Gi0/0.20"] },
+      "bgp": {
+        "neighbors": [
+          { "peer_ip": "10.1.2.1", "remote_as": 65001 },
+          { "peer_ip": "10.2.3.2", "remote_as": 65003 }
+        ],
+        "advertise_prefixes": ["192.168.2.0/24", "172.16.2.0/24"]
+      },
+      "redistribution": { "ospf_to_bgp": true, "bgp_to_ospf": true }
+    },
+
+    "R3": {
+      "hostname": "R3",
+      "role": "core_router",
+      "asn": 65003,
+      "loopback": "3.3.3.3/32",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.156", "username": "", "password": "", "secret": "" },
+      "links": [
+        { "name": "Gi0/0", "ip": "192.168.3.2/24", "desc": "to Switch3", "peer": "Switch3", "peer_intf": "Gi0/0" },
+        { "name": "Gi0/2", "ip": "10.2.3.2/30", "desc": "to R2", "peer": "R2", "peer_intf": "Gi0/2" },
+        { "name": "Gi0/3", "ip": "10.1.3.2/30", "desc": "to R1", "peer": "R1", "peer_intf": "Gi0/3" }
+      ],
+      "sublinks": [],
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Gi0/0"] },
+      "bgp": {
+        "neighbors": [
+          { "peer_ip": "10.2.3.1", "remote_as": 65002 },
+          { "peer_ip": "10.1.3.1", "remote_as": 65001 }
+        ],
+        "advertise_prefixes": ["192.168.3.0/24", "192.168.33.0/24"]
+      },
+      "redistribution": { "ospf_to_bgp": true, "bgp_to_ospf": true }
+    },
+
+    "Switch1": {
+      "hostname": "Switch1",
+      "role": "access_switch",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.152", "username": "", "password": "", "secret": "" },
+      "interfaces": {
+        "Gi0/0": { "desc": "to R1 trunk", "mode": "trunk", "vlans": [10, 20] }
+      },
+      "svis": {
+        "10": { "ip": "192.168.1.1/24", "name": "VLAN10_SITE1" },
+        "20": { "ip": "172.16.1.1/24", "name": "VLAN20_SITE1" }
+      },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Vlan10", "Vlan20"] }
+    },
+
+    "Switch2": {
+      "hostname": "Switch2",
+      "role": "access_switch",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.157", "username": "", "password": "", "secret": "" },
+      "interfaces": {
+        "Gi0/0": { "desc": "to R2 trunk", "mode": "trunk", "vlans": [10, 20] }
+      },
+      "svis": {
+        "10": { "ip": "192.168.2.1/24", "name": "VLAN10_SITE2" },
+        "20": { "ip": "172.16.2.1/24", "name": "VLAN20_SITE2" }
+      },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Vlan10", "Vlan20"] }
+    },
+
+    "Switch3": {
+      "hostname": "Switch3",
+      "role": "distribution_switch",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.159", "username": "", "password": "", "secret": "" },
+      "interfaces": {
+        "Gi0/0": { "desc": "to R3", "routed": true, "ip": "192.168.3.1/24", "peer": "R3", "peer_intf": "Gi0/0" },
+        "Gi0/1": { "desc": "to Switch33 LACP member", "channel_group": 1 },
+        "Gi0/2": { "desc": "to Switch33 LACP member", "channel_group": 1 }
+      },
+      "port_channels": {
+        "1": { "mode": "l3", "members": ["Gi0/2", "Gi0/3"], "ip": "192.168.33.1/24", "desc": "to Switch33" }
+      },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Gi0/0", "Port-channel1"] }
+    },
+
+    "Switch33": {
+      "hostname": "Switch33",
+      "role": "distribution_switch",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.160", "username": "", "password": "", "secret": "" },
+      "interfaces": {
+        "Gi0/1": { "desc": "to Switch3 LACP member", "channel_group": 1 },
+        "Gi0/2": { "desc": "to Switch3 LACP member", "channel_group": 1 }
+      },
+      "port_channels": {
+        "1": { "mode": "l3", "members": ["Gi0/2", "Gi0/3"],"ip": "192.168.33.2/24", "desc": "to Switch3" }
+      },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Port-channel1"] }
+    }
+  }
+}

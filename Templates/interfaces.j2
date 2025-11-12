@@ -1,0 +1,86 @@
+{% if device.role in ["edge_router", "core_router"] %}
+
+    {#------ Subinterface(R1,R2) -----#}
+    {% for sub in device.sublinks | default([]) |  sort(attribute="name") %}
+        {% set parent = sub.name.split('.')[0] %}
+        {% set ip = sub.ip | ipaddr %}
+    interface {{ parent }}
+    no ip address
+    no shutdown
+    interface {{ sub.name }}
+    encapsulation dot1q {{ sub.vlan_id }}
+    ip address {{ ip.ip }} {{ ip.netmask }}
+    {% if sub.desc is defined %} description {{ sub.desc }} {% endif %}
+    {% endfor %}
+
+    {# ---- NORMAL L3 INTERFACE IP CONFIGURATION (R1, R2, R3)----#}
+    {% for link in device.links | default([]) | sort(attribute="name") %}
+        {% set ip = link.ip | ipaddr %}
+    interface {{ link.name }}
+    ip address {{ ip.ip }} {{ ip.netmask }}
+    no shutdown
+    {% if link.desc is defined %} description {{ link.desc }} {% endif %}
+    {% endfor %}
+{% endif %}
+
+    {#------ (SW1, SW2, SW3, SW33 Configuration)------#}
+{% if device.role in ["access_switch", "distribution_switch"] %}
+
+    {#------ VLAN CONFIGURATION (SW1, SW2)------#}
+    {% for vid, _ in device.svis | default({}) | dictsort %}
+    vlan {{ vid }}
+    {% endfor %}
+
+    {#------ TRUNK CONFIGURATION (SW1, SW2)-----#}
+    {% for intf, d in device.interfaces | default({}) | dictsort %}
+    {% if d.mode == "trunk" | default(false) %}
+    interface {{ intf }}
+    switchport trunk encapsulation dot1q
+    switchport mode trunk
+    {% if d.vlans is defined %} switchport trunk allowed vlan {{ d.vlans | join(',') }} {% endif %}
+    no shutdown
+    {% endif %}
+    {% endfor %} 
+
+    {#------ SVI CONFIGURATION (SW1, SW2)-----#}
+    {% for vid, svi in device.svis | default({}) | dictsort %}
+    {% set ip = svi.ip | ipaddr %}
+    interface vlan{{ vid }}
+    ip address {{ ip.ip }} {{ ip.netmask }}
+    no shutdown
+    {% endfor %}
+
+    {#-------L3 PORT INTERFACE IP CONFIGURATION (SW3)------#}
+    {% for intf, intfdata in device.interfaces | default({}) | dictsort %}
+    {% if intfdata.routed | default(false) and intfdata.ip is defined %}
+    {% set ip = intfdata.ip | ipaddr %}
+    interface {{ intf }}
+    no switchport
+    ip address {{ ip.ip }} {{ ip.netmask }}
+    no shutdown
+    {% endif %}
+    {% endfor %}
+
+
+    {#-----PORT-CHANNEL CONFIGURATION (SW3, SW33) ----- #}
+    {% for pcid, mem in device.port_channels | default({}) | dictsort %}
+    {% if mem.mode | default('') == 'l3' %}
+        {% for m in mem.members | default([]) | sort %}
+        interface {{ m }}
+        no switchport
+        channel-group {{ pcid }} mode active
+        no shutdown 
+        {% endfor %}
+    {% if mem.ip is defined %}    
+    interface Port-channel{{ pcid }}
+    {% set ip = mem.ip | ipaddr %}
+        no switchport
+        ip address {{ ip.ip }} {{ ip.netmask }}
+        no shutdown
+    {% endif %}
+
+    {% endif %}
+    {% endfor %}
+
+
+{% endif %}

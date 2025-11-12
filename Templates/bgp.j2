@@ -1,0 +1,8 @@
+{#---BGP CONFIGURATION (R1,R2,R3)--------#}
+
+{% if device.asn is defined %}
+router bgp {{ device.asn }}
+    {% for bgpnei in device.bgp.neighbors | default([]) | sort(attribute="remote_as") %}
+    neighbor {{ bgpnei.peer_ip }} remote-as {{ bgpnei.remote_as }}
+    {% endfor %}
+{% endif %}

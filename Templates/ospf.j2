@@ -1,0 +1,13 @@
+{#----Ospf Configuration------#}
+{% if device.ospf is defined %}
+router ospf {{ device.ospf.process_id }}
+{% if device.loopback is defined %}
+{% set ip = device.loopback | ipaddr %}
+router-id {{ ip.ip }}
+{% endif %}
+
+{% for ifname in device.ospf.ifaces | default([]) | sort%}
+interface {{ ifname }}
+ip ospf {{ device.ospf.process_id }} area {{ device.ospf.area }}
+{% endfor %}
+{% endif %}
