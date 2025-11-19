@@ -1,13 +1,16 @@
 import json
 import os
+import time
 import getpass
 from ipaddress import ip_interface
 from datetime import datetime
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dotenv import load_dotenv
 
 from netmiko import ConnectHandler, NetmikoAuthenticationException, NetmikoTimeoutException
 from jinja2 import FileSystemLoader, Environment, TemplateError
+
+load_dotenv()
 
 
 def load_inventory(inventorypath):
@@ -43,7 +46,7 @@ def render_jinja(inventory, jinjafolderpath, jinjatemp):
 
 
 def save_render_config(dev_name, commands, pre_push):
-    """Per Network Device: Saves the rendered Template to Device Path"""
+    """Per Network Device: Saves the rendered Template to Local Path"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     device_folder = os.path.join(pre_push, dev_name)
     os.makedirs(device_folder, exist_ok=True)
@@ -68,7 +71,7 @@ def push_config(dev_data, commands):
 
 
 def save_push_config(dev_name, output, post_push):
-    """Per Network Device: Saves the Configuration to Device Path"""
+    """Per Network Device: Saves the Configuration to Local Path"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     device_folder = os.path.join(post_push, dev_name)
     os.makedirs(device_folder, exist_ok=True)
@@ -135,10 +138,15 @@ def main_concurrency():
     except Exception as e:
         print(f"LOAD/RENDER ERROR: {e}")
         return
+    # ------------------------------------------------------------------------#
+    """Setting up Hybrid Username and Password(.env & getpass)"""
+    username = os.getenv("NET_USERNAME")
 
-    username = input("Network username: ")
-    password = getpass.getpass("Network password: ")
+    if not username:
+        username = input("NETWORK USERNAME: ")
 
+    password = getpass.getpass("NETWORK PASSWORD: ")
+    # ------------------------------------------------------------------------#
     print(f"==" * 30)
     print(f"DEPLOYING TO {len(renderedjinja)} DEVICES CONCURRENTLY")
     print(f"==" * 30)
