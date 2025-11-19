@@ -180,7 +180,7 @@ def main_concurrency():
     print(f"SUCCESSFUL: {success}")
     print(f"FAILED: {failed}\n")
     print(f"PERCENTAGE SUCCESSFUL: {success_percentage}%")
-    
+
     if failed > 0:
         failed_devices = [r for r in status_info if r['status'] != "success"]
         print(failed_devices)
