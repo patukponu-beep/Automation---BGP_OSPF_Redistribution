@@ -147,14 +147,25 @@ def main_concurrency():
 
     password = getpass.getpass("NETWORK PASSWORD: ")
     # ------------------------------------------------------------------------#
+    """Setting up a Dynamic Threadpool size """
+    active_blocks = [b for b in renderedjinja if b["commands"]]
+    num_targets = len(active_blocks)
+
+    if num_targets == 0:
+        print("NO DEVICES WITH CONFIG TO DEPLOY")
+        return
+
+    # Dynamic ThreadPool size, capped at 20 workers
+    max_workers = min(20, num_targets)
+    # ------------------------------------------------------------------------#
     print(f"==" * 30)
-    print(f"DEPLOYING TO {len(renderedjinja)} DEVICES CONCURRENTLY")
+    print(f"DEPLOYING TO {num_targets} DEVICES CONCURRENTLY")
     print(f"==" * 30)
     print(f"\n")
 
     start_time = time.time()  # Starting Timer For ThreadPoolExecutor
     status_info = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for block in renderedjinja:
             dev_name = block['devices']
