@@ -3,6 +3,7 @@ import os
 import getpass
 from ipaddress import ip_interface
 from datetime import datetime
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from netmiko import ConnectHandler, NetmikoAuthenticationException, NetmikoTimeoutException
@@ -42,7 +43,7 @@ def render_jinja(inventory, jinjafolderpath, jinjatemp):
 
 
 def save_render_config(dev_name, commands, pre_push):
-    """Saves the rendered Template to Device Path"""
+    """Per Network Device: Saves the rendered Template to Device Path"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     device_folder = os.path.join(pre_push, dev_name)
     os.makedirs(device_folder, exist_ok=True)
@@ -54,7 +55,7 @@ def save_render_config(dev_name, commands, pre_push):
 
 
 def push_config(dev_data, commands):
-    """Per Network Device Netmiko Connection and Configuration"""
+    """Per Network Device: Netmiko Connection and Configuration"""
     ssh_info = dev_data['connection']
 
     with ConnectHandler(**ssh_info) as conn:
@@ -67,7 +68,7 @@ def push_config(dev_data, commands):
 
 
 def save_push_config(dev_name, output, post_push):
-    """Saves the Configuration Per Network Device to Device Path"""
+    """Per Network Device: Saves the Configuration to Device Path"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     device_folder = os.path.join(post_push, dev_name)
     os.makedirs(device_folder, exist_ok=True)
@@ -143,6 +144,7 @@ def main_concurrency():
     print(f"==" * 30)
     print(f"\n")
 
+    start_time = time.time()  # Starting Timer For ThreadPoolExecutor
     status_info = []
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = []
@@ -169,17 +171,19 @@ def main_concurrency():
             dev_status = fut.result()
             status_info.append(dev_status)
 
+    elapsed = time.time() - start_time  # Ends Timer For ThreadpoolExecutor
     total = len(status_info)
     success = sum(1 for r in status_info if r['status'] == "success")
     failed = total - success
-    success_percentage = success/total * 100
+    success_percentage = success / total * 100 if total > 0 else 0
     print(f"==" * 30)
     print(f"DEPLOYMENT SUMMARY")
     print(f"==" * 30)
     print(f"TOTAL DEVICES: {total}")
     print(f"SUCCESSFUL: {success}")
     print(f"FAILED: {failed}\n")
-    print(f"PERCENTAGE SUCCESSFUL: {success_percentage}%")
+    print(f"PERCENTAGE SUCCESSFUL: {success_percentage:.1f}%\n")
+    print(f"TOTAL DEPLOYMENT TIME: {elapsed:.2f} seconds")
 
     if failed > 0:
         failed_devices = [r for r in status_info if r['status'] != "success"]
