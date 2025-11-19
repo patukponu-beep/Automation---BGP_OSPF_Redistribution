@@ -134,16 +134,16 @@ def main_concurrency():
     except Exception as e:
         print(f"LOAD/RENDER ERROR: {e}")
         return
+
+    username = input("Network username: ")
+    password = getpass.getpass("Network password: ")
+
     print(f"==" * 30)
     print(f"DEPLOYING TO {len(renderedjinja)} DEVICES CONCURRENTLY")
     print(f"==" * 30)
     print(f"\n")
 
     status_info = []
-
-    username = input("Network username: ")
-    password = getpass.getpass("Network password: ")
-
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = []
         for block in renderedjinja:
@@ -172,14 +172,15 @@ def main_concurrency():
     total = len(status_info)
     success = sum(1 for r in status_info if r['status'] == "success")
     failed = total - success
-
+    success_percentage = success/total * 100
     print(f"==" * 30)
     print(f"DEPLOYMENT SUMMARY")
     print(f"==" * 30)
     print(f"TOTAL DEVICES: {total}")
     print(f"SUCCESSFUL: {success}")
-    print(f"FAILED: {failed}")
-
+    print(f"FAILED: {failed}\n")
+    print(f"PERCENTAGE SUCCESSFUL: {success_percentage}%")
+    
     if failed > 0:
         failed_devices = [r for r in status_info if r['status'] != "success"]
         print(failed_devices)
