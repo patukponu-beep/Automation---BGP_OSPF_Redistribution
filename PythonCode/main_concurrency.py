@@ -92,7 +92,7 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push,
     except Exception as e:
         status_info['status'] = "UNKNOWN FAILURE"
         status_info['reason'] = f"PRE-SAVE ERROR: {e}"
-        return status_info  # Because, why continue when there's a render failure?
+        return status_info  # Because, i don't wanna continue when i can't save my rendered template concurrently
 
     bad_markers = [
         "invalid input detected",
@@ -106,7 +106,8 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push,
         "incomplete command"
     ]
     for attempt in range(1, max_retries + 2):
-        status_info['attempt'] = attempt
+        """Sets Up the Retry loop with Conditions"""
+        status_info['attempts'] = attempt
         try:
             output = push_config(dev_data, commands)
             save_push_config(dev_name=dev_name, output=output, post_push=post_push)
