@@ -92,6 +92,12 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push):
         bad_markers = [
 
             "invalid input detected",
+            "bad ip address or host name",
+            "invalid input detected while parsing",
+            "invalid input detected at '^' marker.",
+            "invalid input detected while parsing",
+            "invalid input detected at '^' position",
+            "invalid input",
             "ambiguous command",
             "incomplete command"
         ]
@@ -167,13 +173,10 @@ def main_concurrency():
     status_info = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
-        for block in renderedjinja:
+        for block in active_blocks:
             dev_name = block['devices']
             commands = block['commands']
 
-            if not commands:
-                print(f"SKIPPING {dev_name} - NO CONFIG TO APPLY")
-                continue
             if dev_name not in inventory['devices']:
                 print(f"DEVICE {dev_name} MISSING IN INVENTORY")
                 continue
