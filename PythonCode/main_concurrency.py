@@ -11,6 +11,8 @@ from netmiko import ConnectHandler, NetmikoAuthenticationException, NetmikoTimeo
 from jinja2 import FileSystemLoader, Environment, TemplateError
 
 load_dotenv()
+MAX_RETRIES = 2  # number of retries after the first attempt
+RETRY_DELAY = 3  # seconds between retries
 
 
 def load_inventory(inventorypath):
@@ -81,41 +83,61 @@ def save_push_config(dev_name, output, post_push):
     return filename
 
 
-def push_concurrent(dev_name, dev_data, commands, pre_push, post_push):
+def push_concurrent(dev_name, dev_data, commands, pre_push, post_push,
+                    max_retries=MAX_RETRIES, retry_delay=RETRY_DELAY):
     """Sets Up Functions for Concurrent Automation"""
-    status_info = {"devices": dev_name, "status": "success", "reason": None}
+    status_info = {"devices": dev_name, "status": "success", "reason": None, "attempts": 0}
     try:
         save_render_config(dev_name, commands, pre_push)
-        output = push_config(dev_data, commands)
-        save_push_config(dev_name=dev_name, output=output, post_push=post_push)
-
-        bad_markers = [
-
-            "invalid input detected",
-            "bad ip address or host name",
-            "invalid input detected while parsing",
-            "invalid input detected at '^' marker.",
-            "invalid input detected while parsing",
-            "invalid input detected at '^' position",
-            "invalid input",
-            "ambiguous command",
-            "incomplete command"
-        ]
-
-        output_cf = output.casefold()
-        if any(m in output_cf for m in bad_markers):
-            status_info['status'] = "CONFIG ERROR"
-            status_info['reason'] = "CLI ERROR IN OUTPUT"
-
-    except NetmikoTimeoutException as e:
-        status_info['status'] = "TIMEOUT"
-        status_info['reason'] = str(e)
-    except NetmikoAuthenticationException as e:
-        status_info['status'] = "AUTH FAILURE"
-        status_info['reason'] = str(e)
     except Exception as e:
         status_info['status'] = "UNKNOWN FAILURE"
-        status_info['reason'] = str(e)
+        status_info['reason'] = f"PRE-SAVE ERROR: {e}"
+        return status_info  # Because, why continue when there's a render failure?
+
+    bad_markers = [
+        "invalid input detected",
+        "bad ip address or host name",
+        "invalid input detected while parsing",
+        "invalid input detected at '^' marker.",
+        "invalid input detected while parsing",
+        "invalid input detected at '^' position",
+        "invalid input",
+        "ambiguous command",
+        "incomplete command"
+    ]
+    for attempt in range(1, max_retries + 2):
+        status_info['attempt'] = attempt
+        try:
+            output = push_config(dev_data, commands)
+            save_push_config(dev_name=dev_name, output=output, post_push=post_push)
+
+            output_cf = output.casefold()
+            if any(m in output_cf for m in bad_markers):
+                status_info['status'] = "CONFIG ERROR"
+                status_info['reason'] = "CLI ERROR IN OUTPUT"
+            else:
+                status_info['status'] = "success"
+                status_info['reason'] = None
+            break  # cuz there's a success or config error - we don't run the loop again here.
+
+        except NetmikoAuthenticationException as e:
+            status_info['status'] = "AUTH FAILURE"
+            status_info['reason'] = str(e)
+            break  # cuz if there's an auth failure(wrong credentials obviously) why retry ?
+
+        except NetmikoTimeoutException as e:
+            status_info['status'] = "TIMEOUT"
+            status_info['reason'] = str(e)
+
+        except Exception as e:
+            status_info['status'] = "UNKNOWN FAILURE"
+            status_info['reason'] = str(e)
+        #     But we gonna retry here because it's either a Timeout or an unknown error
+
+        if attempt <= max_retries:
+            time.sleep(retry_delay)
+        else:
+            break
 
     return status_info
 
