@@ -97,6 +97,7 @@ python main_concurrency.py
 -   Saves pre-push and post-push logs\
 -   Uses JSON for easy device scaling\
 -   Compatible with Windows, Linux, and macOS
+-   Includes per-device retry logic for transient SSH failures
 
 ## 🔧 Requirements
 
