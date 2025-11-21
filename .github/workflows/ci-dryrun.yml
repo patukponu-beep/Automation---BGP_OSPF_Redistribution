@@ -6,9 +6,9 @@ name: CI Dry Run Validation
 # or API.
 on:
   push:
-    branches: [ dry-spell ]
+    branches: [ main ]
   pull_request:
-    branches: [ dry-spell ]
+    branches: [ main ]
   workflow_dispatch:
 
 
