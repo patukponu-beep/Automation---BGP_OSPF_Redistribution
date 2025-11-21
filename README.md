@@ -1,125 +1,163 @@
 # BGP_OSPF_Redistribution
 
-A Python-based network automation project that simplifies BGP and OSPF configuration deployment using **Jinja2**, **Netmiko**, and structured **JSON inventories**.  
-It is designed for scalability, separation of concerns, and easy customization across multiple network environments.
+A Python-based network automation project that simplifies BGP and OSPF
+configuration deployment using **Jinja2**, **Netmiko**, and structured
+**JSON inventories**.\
+It supports scalable deployment and includes both **sequential** and
+**concurrent** configuration execution.
 
 ## 🖼️ Network Diagram
 
 ![Network Diagram](Network%20Topology/Network%20Diagram.png)
 
----
-
 ## 🧠 Overview
 
 This project automates:
-- Template rendering for Cisco routers and switches.
-- Configuration generation using **Jinja2**.
-- Secure SSH-based deployment via **Netmiko**.
-- Organized storage of rendered configs (pre- and post-push).
-- Structured device management using JSON inventories.
 
----
+-   Template rendering for Cisco routers and switches\
+-   Configuration generation using **Jinja2**\
+-   Secure SSH-based deployment via **Netmiko**\
+-   Organized storage of rendered configs (pre-push and post-push)\
+-   Structured device management using JSON inventories\
+-   **Optional concurrent deployment using ThreadPoolExecutor**
 
 ## ⚙️ Project Structure
 
-```
-BGP_OSPF_Redistribution/
-│
-├── Inventory/
-│   └── pseudoinventory.json          # Device data (hostnames, IPs, connection details)
-│
-├── Templates/                        # Jinja2 configuration templates
-│   ├── main.j2
-│   ├── bgp.j2
-│   ├── ospf.j2
-│   ├── interfaces.j2
-│   └── redistribution.j2
-│
-├── PythonCode/
-│   └── main.py                       # Main orchestration script
-│
-├── Saved_render_config/              # Auto-saved pre- and post-push configurations
-│   ├── pre_push/
-│   └── post_push/
-│
-└── .gitignore
-```
+    BGP_OSPF_Redistribution/
+    │
+    ├── Inventory/
+    │   └── pseudoinventory.json
+    │
+    ├── Templates/
+    │   ├── main.j2
+    │   ├── bgp.j2
+    │   ├── ospf.j2
+    │   ├── interfaces.j2
+    │   └── redistribution.j2
+    │
+    ├── PythonCode/
+    │   ├── main.py                # Sequential deployment
+    │   └── main_concurrency.py    # Concurrent deployment version
+    │
+    ├── Saved_render_config/
+    │   ├── pre_push/
+    │   └── post_push/
+    │
+    └── .gitignore
 
----
 
-## 🚀 How It Works
+## ✅ Standalone Script Note
 
-1. **Inventory Load** – The script reads `pseudoinventory.json` to get device details.  
-2. **Template Rendering** – Each device’s configuration is generated using the appropriate Jinja2 template.  
-3. **Pre-Push Save** – Configurations are saved locally before being sent to devices.  
-4. **Device Deployment** – Configs are pushed via SSH using Netmiko.  
-5. **Post-Push Save** – Command outputs are logged for validation and auditing.
+The Python scripts are standalone and can be run directly without modifying the code.
+However, the project relies on the current folder layout and inventory format.
 
----
+To run successfully, keep:
+- the Inventory folder at the same level shown in Project Structure
+- the file name pseudoinventory.json
+- the devices JSON structure and keys (devices, connection, etc.) unchanged
+- the Templates folder and template names in place
 
-## 🧩 Key Features
+If you want to use a differenct inventory file or folder path, update the inventorypath and jinjafolderpath variables in the script.
 
-- **Separation of concerns:** Templates, inventories, and logic are modular.  
-- **Resilience:** Handles authentication errors, timeouts, and connection drops gracefully.  
-- **Scalable:** Easily extendable for hundreds of devices via JSON.  
-- **Cross-platform:** Works on Windows, macOS, and Linux environments.
+## ⚡ NEW: Concurrent Deployment (ThreadPoolExecutor)
 
----
+This project includes a high-speed **concurrent configuration engine**
+built using Python's `ThreadPoolExecutor`.
 
-## 🔧 Requirements
+### Benefits
 
-Install dependencies via `pip`:
-```bash
-pip install jinja2 netmiko
-```
+-   Faster than sequential execution\
+-   Ideal for multiple devices (10--200+)\
+-   Each device runs independently\
+-   Full per-device reporting (success, timeout, auth failure, CLI
+    error)
 
-Optional for future extensions:
-```bash
-pip install rich colorama
-```
+### How It Works
 
----
+1.  Jinja2 renders per-device configuration\
+2.  Pre-push config stored locally\
+3.  Config pushes run **in parallel threads**\
+4.  Post-push logs and deployment outcomes stored per device\
+5.  Summary report printed at the end
 
-## 🧰 Usage
+### Example Summary
 
-Run from the project root or directly inside `PythonCode/`:
+    ==============================
+    DEPLOYMENT SUMMARY
+    ==============================
+    TOTAL DEVICES: 4
+    SUCCESSFUL: 4
+    FAILED: 0
 
-```bash
+## 🛡️CI Dry-Run and Human-Approved CD
+This project supports a safe CI/CD model designed for network infrastructure, where destructive actions must never run automatically.
+
+CI (Continuous Integration)
+
+- Runs dry run mode automatically
+- Renders all templates
+- Validates structure and output
+- Saves pre-push configs
+- No SSH, no device changes
+
+CD (Continuous Deployment – Human Approved)
+
+- Requires an engineer to run the script manually
+- Interactive menu with confirmation steps
+- Only then performs real device changes
+- Fully auditable and intentional
+This model follows industry best practice for critical infrastructure (“Human-in-the-loop CD” / “Approval-gated deployments”), used by Google, Netflix, large banks, and telecom environments.
+
+## 🚀 Running the Script
+
+### Sequential (standard):
+
+``` bash
 python main.py
 ```
 
-When prompted:
-```
-Network username: cisco
-Network password: cisco
-```
-These credentials are for lab use only. Do not reuse on production systems.
+### Concurrent (parallel):
 
-The script will generate and push configurations automatically.
-
----
-
-## 📦 Example Output
-
-Pre-push configs and post-push logs will be stored under:
-```
-Saved_render_config/pre_push/
-Saved_render_config/post_push/
+``` bash
+python main_concurrency.py
 ```
 
----
+## 🧩 Key Features
+
+-   Template, inventory, and logic separation\
+-   Modular and extendable structure\
+-   Concurrent execution with error handling\
+-   Saves pre-push and post-push logs\
+-   Uses JSON for easy device scaling\
+-   Compatible with Windows, Linux, and macOS
+-   Includes per-device retry logic for transient SSH failures
+-   Safe dry-run with interactive mode selection and double confirmation
+
+## 🔧 Requirements
+
+``` bash
+pip install jinja2 netmiko
+```
+
+Optional:
+
+``` bash
+pip install rich colorama
+```
+
+## 📦 Output Locations
+
+    Saved_render_config/
+    ├── pre_push/
+    └── post_push/
 
 ## 🧑‍💻 Author
 
-**Patrick Ukponu**  
-Network Engineer | Cyber Security Specialist  
-- MSc in Cyber Security  
-- CCNP | CompTIA Security+  
-- GitHub: [patukponu-beep](https://github.com/patukponu-beep)  
-
----
+Patrick Ukponu\
+Network Engineer \| Cyber Security Specialist\
+GitHub: https://github.com/patukponu-beep
 
 ## 📄 License
 
-This project is for educational and professional demonstration purposes.  
-You may modify and adapt it with proper attribution.
+For educational and professional demonstration purposes. Modification
+allowed with attribution.
