@@ -42,5 +42,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with: 
         name: pre-push-rendered-configs
-        path: Saved-render-config/pre_push/**
+        path: Saved_render_config/pre_push/**
         if-no-files-found: warn
