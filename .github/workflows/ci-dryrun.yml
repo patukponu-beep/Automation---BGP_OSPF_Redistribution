@@ -1,0 +1,38 @@
+# This is a basic workflow that is manually triggered
+
+name: CI Dry Run Validation
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  push:
+    branches: [ dry-spell ]
+  pull_request:
+    branches: [ dry-spell ]
+  workflow_dispatch:
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Runs a single command using the runners shell
+    - name: Checkout repo
+      uses: actions/checkout@4
+      
+    - name: Setup Python
+      uses: actions/setup-python@4
+      with:
+        python-version: "3.10"
+
+    - name: Install Dependencies
+      run: |
+        pip install jinja2 netmiko python-dotenv
+        
+    - name: Run dry-run
+      run: |
+        python PythonCode/main_concurrency.py
