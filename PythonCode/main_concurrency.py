@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from netmiko import ConnectHandler, NetmikoAuthenticationException, NetmikoTimeoutException
 from jinja2 import FileSystemLoader, Environment, TemplateError
 
-load_dotenv()
+load_dotenv()  # Load environment variables from .env file
 MAX_RETRIES = 2  # number of retries after the first attempt
 RETRY_DELAY = 3  # seconds between retries
 
@@ -64,12 +64,14 @@ def push_config(dev_data, commands):
     ssh_info = dev_data['connection']
 
     with ConnectHandler(**ssh_info) as conn:
-        conn.enable()
+        conn.enable()  # Not always needed but best practice
         output = conn.send_config_set(commands)
-        save_output = conn.save_config()  # or conn.send_command('write memory')
-        full_output = f"{output}----WRITE MEMORY----{save_output}"
+        # save_output = conn.save_config()  # or conn.send_command('write memory')
+        # full_output = f"{output}----WRITE MEMORY----{save_output}"
+        # Commented out because I can...But also cuz of separation of concerns
+        # The script should be only be applying commands, not also saving to NVRAM
 
-    return full_output
+    return output
 
 
 def save_push_config(dev_name, output, post_push):
@@ -180,18 +182,13 @@ def get_user_preference():
                     return False  # dry_run=False ie Real Run activated from main
                 elif confirm in ['no', 'n', '2']:
                     print("Operation cancelled. Exiting...")
-                    exit()
+                    exit()  # exits all loops
                 elif confirm in ['back', 'b', 'return']:
                     print("Returning to main menu...")
-                    break
+                    break  # exists just the 2nd loop to the 1st loop
                 else:
                     print("❌ Invalid input! Please enter 'yes', 'no', or 'back'.")
 
-            # If user chose 'back', we continue to show main menu again
-            if confirm in ['back', 'b', 'return']:
-                continue
-            else:
-                break  # If user chose 'no', exit the program
         else:
             print("❌ Invalid input! Please enter only 'Y' or 'N'.")
 
@@ -241,6 +238,7 @@ def main_concurrency(dry_run=False):
     # Dynamic ThreadPool size, capped at 20 workers
     max_workers = min(20, num_targets)
     # ------------------------------------------------------------------------#
+    print("\n")
     print(f"==" * 30)
     print(f"MODE: {'DRY RUN' if dry_run else 'REAL RUN'}")
     print(f"DEPLOYING TO {num_targets} DEVICES CONCURRENTLY")
@@ -295,6 +293,6 @@ def main_concurrency(dry_run=False):
 
 
 if __name__ == "__main__":
-    dry_run = get_user_preference()
-    main_concurrency(dry_run=dry_run)
+    dry_run_input = get_user_preference()
+    main_concurrency(dry_run=dry_run_input)
 
