@@ -83,16 +83,27 @@ def save_push_config(dev_name, output, post_push):
     return filename
 
 
-def push_concurrent(dev_name, dev_data, commands, pre_push, post_push,
+def push_concurrent(dev_name, dev_data, commands, pre_push, post_push, dry_run=False,
                     max_retries=MAX_RETRIES, retry_delay=RETRY_DELAY):
     """Sets Up Functions for Concurrent Automation"""
-    status_info = {"devices": dev_name, "status": "success", "reason": None, "attempts": 0}
+    status_info = {"devices": dev_name,
+                   "mode": "DRY RUN" if dry_run else "REAL RUN",
+                   "status": "success",
+                   "reason": None,
+                   "push_attempts": 0}
     try:
         save_render_config(dev_name, commands, pre_push)
     except Exception as e:
         status_info['status'] = "UNKNOWN FAILURE"
         status_info['reason'] = f"PRE-SAVE ERROR: {e}"
+
         return status_info  # Because, i don't wanna continue when i can't save my rendered template concurrently
+
+    if dry_run:
+        status_info['status'] = "DRY RUN"
+        status_info['reason'] = "RENDERED & SAVED ONLY"
+        status_info['push_attempts'] = 0
+        return status_info  # Because, this a dry run don't wanna continue with push_config
 
     bad_markers = [
         "invalid input detected",
@@ -107,7 +118,7 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push,
     ]
     for attempt in range(1, max_retries + 2):
         """Sets Up the Retry loop with Conditions"""
-        status_info['attempts'] = attempt
+        status_info['push_attempts'] = attempt
         try:
             output = push_config(dev_data, commands)
             save_push_config(dev_name=dev_name, output=output, post_push=post_push)
@@ -143,18 +154,58 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push,
     return status_info
 
 
-def main_concurrency():
+def get_user_preference():
+    while True:
+        print("\nSelect run mode:")
+        print("Y - Dry Run (simulation only)")
+        print("N - Normal Run (real execution)")
+
+        choice = input("Enter Y or N: ").strip().lower()
+
+        if choice in ['y', 'yes', '1']:
+            print("Starting DRY RUN mode...")
+            return True  # dry_run=True ie Dry_Run activated from main
+        elif choice in ['n', 'no', '2']:
+            print("\n⚠️ WARNING: NORMAL RUN mode selected!")
+            print("   • Real configurations will be pushed to network devices")
+            print("   • This will make actual changes to your infrastructure")
+
+            # Inner loop for confirmation with back option
+            while True:
+                confirm = input(
+                    "\nType 'yes' to continue, 'no' to cancel, or 'back' to return to main menu: ").strip().lower()
+
+                if confirm in ['yes', 'y', '1']:
+                    print("\n🚀 Starting NORMAL RUN mode...")
+                    return False  # dry_run=False ie Real Run activated from main
+                elif confirm in ['no', 'n', '2']:
+                    print("Operation cancelled. Exiting...")
+                    exit()
+                elif confirm in ['back', 'b', 'return']:
+                    print("Returning to main menu...")
+                    break
+                else:
+                    print("❌ Invalid input! Please enter 'yes', 'no', or 'back'.")
+
+            # If user chose 'back', we continue to show main menu again
+            if confirm in ['back', 'b', 'return']:
+                continue
+            else:
+                break  # If user chose 'no', exit the program
+        else:
+            print("❌ Invalid input! Please enter only 'Y' or 'N'.")
+
+
+def main_concurrency(dry_run=False):
     """----Orchestration----"""
     """Get the directory where this script lives"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     inventorypath = os.path.join(base_dir, "..", "Inventory", "pseudoinventory.json")
-
     jinjafolderpath = os.path.join(base_dir, "..", "Templates")
-
     jinjatemp = "main.j2"
     pre_push = os.path.join(base_dir, "..", "Saved_render_config", "pre_push")
-
     post_push = os.path.join(base_dir, "..", "Saved_render_config", "post_push")
+    # --------------------------------------------------------------------------#
 
     """Get credentials ONCE at startup"""
     try:
@@ -174,7 +225,10 @@ def main_concurrency():
     if not username:
         username = input("NETWORK USERNAME: ")
 
-    password = getpass.getpass("NETWORK PASSWORD: ")
+    password = None
+
+    if not dry_run:
+        password = getpass.getpass("NETWORK PASSWORD: ")
     # ------------------------------------------------------------------------#
     """Setting up a Dynamic Threadpool size """
     active_blocks = [b for b in renderedjinja if b["commands"]]
@@ -188,7 +242,9 @@ def main_concurrency():
     max_workers = min(20, num_targets)
     # ------------------------------------------------------------------------#
     print(f"==" * 30)
+    print(f"MODE: {'DRY RUN' if dry_run else 'REAL RUN'}")
     print(f"DEPLOYING TO {num_targets} DEVICES CONCURRENTLY")
+    print(f"WORKERS: {max_workers}")
     print(f"==" * 30)
     print(f"\n")
 
@@ -205,10 +261,11 @@ def main_concurrency():
                 continue
 
             dev_data = inventory['devices'][dev_name].copy()
-            dev_data['connection']['username'] = username
-            dev_data['connection']['password'] = password
+            if not dry_run:
+                dev_data['connection']['username'] = username
+                dev_data['connection']['password'] = password
 
-            fut = executor.submit(push_concurrent, dev_name, dev_data, commands, pre_push, post_push)
+            fut = executor.submit(push_concurrent, dev_name, dev_data, commands, pre_push, post_push, dry_run)
 
             futures.append(fut)
 
@@ -218,12 +275,14 @@ def main_concurrency():
 
     elapsed = time.time() - start_time  # Ends Timer For ThreadpoolExecutor
     total = len(status_info)
-    success = sum(1 for r in status_info if r['status'] == "success")
+    success = sum(1 for r in status_info if r['status'] in ["success", "DRY RUN"])
     failed = total - success
     success_percentage = success / total * 100 if total > 0 else 0
     print(f"==" * 30)
     print(f"DEPLOYMENT SUMMARY")
     print(f"==" * 30)
+    if dry_run:
+        print(f"DRY RUN MODE – configurations rendered only and saved to {pre_push}\n")
     print(f"TOTAL DEVICES: {total}")
     print(f"SUCCESSFUL: {success}")
     print(f"FAILED: {failed}\n")
@@ -231,9 +290,11 @@ def main_concurrency():
     print(f"TOTAL DEPLOYMENT TIME: {elapsed:.2f} seconds")
 
     if failed > 0:
-        failed_devices = [r for r in status_info if r['status'] != "success"]
+        failed_devices = [r for r in status_info if r['status'] not in ["success", "DRY RUN"]]
         print(failed_devices)
 
 
 if __name__ == "__main__":
-    main_concurrency()
+    dry_run = get_user_preference()
+    main_concurrency(dry_run=dry_run)
+
