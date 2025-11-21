@@ -293,6 +293,17 @@ def main_concurrency(dry_run=False):
 
 
 if __name__ == "__main__":
-    dry_run_input = get_user_preference()
-    main_concurrency(dry_run=dry_run_input)
+    # ============ CI MODE DETECTION ============
+    # If running in CI (GitHub Actions, GitLab CI, Jenkins, etc.)
+    # → skip all prompts, force dry-run, no password asked
+    if os.getenv("CI").lower() == "true" or "CI" in os.environ:
+        print("CI ENVIRONMENT DETECTED – AUTO-RUNNING DRY RUN MODE")
+        main_concurrency(dry_run=True)
+
+    # ============ INTERACTIVE MODE ============
+    else:
+        dry_run = get_user_preference()
+        main_concurrency(dry_run=dry_run)
+
+
 
