@@ -36,3 +36,11 @@ jobs:
     - name: Run dry-run
       run: |
         python PythonCode/main_concurrency.py
+
+    - name: Upload pre-push rendered configs
+      if: always()
+      uses: actions/upload-artifacts@v4
+      with: 
+        name: pre-push-rendered-configs
+        path: Saved-render-config/pre_push/**
+        if-no-files-found: warn
