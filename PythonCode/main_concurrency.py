@@ -220,8 +220,10 @@ def main_concurrency(dry_run=False):
     username = os.getenv("NET_USERNAME")
 
     if not username:
-        username = input("NETWORK USERNAME: ")
-
+        if dry_run:
+            username = "dummy_password"
+        else:
+            username = input("NETWORK USERNAME: ")
     password = None
 
     if not dry_run:
