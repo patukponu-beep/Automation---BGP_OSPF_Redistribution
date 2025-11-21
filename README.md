@@ -89,6 +89,25 @@ built using Python's `ThreadPoolExecutor`.
     SUCCESSFUL: 4
     FAILED: 0
 
+## 🛡️CI Dry-Run and Human-Approved CD
+This project supports a safe CI/CD model designed for network infrastructure, where destructive actions must never run automatically.
+
+CI (Continuous Integration)
+
+- Runs dry run mode automatically
+- Renders all templates
+- Validates structure and output
+- Saves pre-push configs
+- No SSH, no device changes
+
+CD (Continuous Deployment – Human Approved)
+
+- Requires an engineer to run the script manually
+- Interactive menu with confirmation steps
+- Only then performs real device changes
+- Fully auditable and intentional
+This model follows industry best practice for critical infrastructure (“Human-in-the-loop CD” / “Approval-gated deployments”), used by Google, Netflix, large banks, and telecom environments.
+
 ## 🚀 Running the Script
 
 ### Sequential (standard):
