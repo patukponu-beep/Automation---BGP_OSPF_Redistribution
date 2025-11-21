@@ -45,6 +45,20 @@ This project automates:
     │
     └── .gitignore
 
+
+## ✅ Standalone Script Note
+
+The Python scripts are standalone and can be run directly without modifying the code.
+However, the project relies on the current folder layout and inventory format.
+
+To run successfully, keep:
+- the Inventory folder at the same level shown in Project Structure
+- the file name pseudoinventory.json
+- the devices JSON structure and keys (devices, connection, etc.) unchanged
+- the Templates folder and template names in place
+
+If you want to use a differenct inventory file or folder path, update the inventorypath and jinjafolderpath variables in the script.
+
 ## ⚡ NEW: Concurrent Deployment (ThreadPoolExecutor)
 
 This project includes a high-speed **concurrent configuration engine**
@@ -98,6 +112,7 @@ python main_concurrency.py
 -   Uses JSON for easy device scaling\
 -   Compatible with Windows, Linux, and macOS
 -   Includes per-device retry logic for transient SSH failures
+-   Safe dry-run with interactive mode selection and double confirmation
 
 ## 🔧 Requirements
 
