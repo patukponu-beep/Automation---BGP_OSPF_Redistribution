@@ -505,10 +505,10 @@ Contributions welcome! Please:
 
 ## 📧 Contact
 
-**Author**: Patrick Ukponu
-Network Engineer|CCNP Enterprise|Cyber Security Specialist|
-**LinkedIn**: https://www.linkedin.com/in/patrick-u-78a001176/
-**Email**: pat.ukponu@gmail.com
+- **Author**: Patrick Ukponu
+- Network Engineer|CCNP Enterprise|Cyber Security Specialist|
+- **LinkedIn**: https://www.linkedin.com/in/patrick-u-78a001176/
+- **Email**: pat.ukponu@gmail.com
 
 
 ---
