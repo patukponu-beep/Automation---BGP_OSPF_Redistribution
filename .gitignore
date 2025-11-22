@@ -2,3 +2,4 @@
 venv/
 .idea/
 Saved_render_config/
+.env
