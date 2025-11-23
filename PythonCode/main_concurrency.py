@@ -1,4 +1,5 @@
 import json
+import yaml
 import os
 import time
 import getpass
@@ -16,9 +17,17 @@ RETRY_DELAY = 3  # seconds between retries
 
 
 def load_inventory(inventorypath):
-    """Loading Inventory from file"""
+    """Loading Inventory from JSON or YAML file"""
+    _, ext = os.path.splitext(inventorypath)
+
     with open(inventorypath, 'r') as f:
-        inventory = json.load(f)
+        if ext.lower() in ['.yaml', '.yml']:
+            inventory = yaml.safe_load(f)
+        elif ext.lower() == '.json':
+            inventory = json.load(f)
+        else:
+            raise ValueError(f"Unsupported file format: {ext}. Use .json, .yaml, or .yml")
+
     return inventory
 
 
@@ -197,7 +206,16 @@ def main_concurrency(dry_run=False):
     """----Orchestration----"""
     """Get the directory where this script lives"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    inventorypath = os.path.join(base_dir, "..", "Inventory", "pseudoinventory.json")
+    inventory_yaml = os.path.join(base_dir, "..", "Inventory", "pseudoinventory.yaml")
+    inventory_json = os.path.join(base_dir, "..", "Inventory", "pseudoinventory.json")
+
+    if os.path.exists(inventory_yaml):
+        inventorypath = inventory_yaml
+    elif os.path.exists(inventory_json):
+        inventorypath = inventory_json
+    else:
+        print("ERROR: No inventory file found (pseudoinventory.json or pseudoinventory.yaml)")
+        return
     jinjafolderpath = os.path.join(base_dir, "..", "Templates")
     jinjatemp = "main.j2"
     pre_push = os.path.join(base_dir, "..", "Saved_render_config", "pre_push")
@@ -308,5 +326,3 @@ if __name__ == "__main__":
     else:
         dry_run = get_user_preference()
         main_concurrency(dry_run=dry_run)
-
-

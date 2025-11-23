@@ -105,37 +105,74 @@ This project automates network configuration deployment using **Jinja2 templates
 └── Saved_render_config/        # ← Auto-created if missing
 ```
 
-#### Inventory JSON Structure (Required Keys)
+### Inventory Format (Flexible)
+
+The framework supports both **JSON** and **YAML** inventory formats:
+
+**JSON** (`pseudoinventory.json`):
 ```json
 {
-  "devices": {                   // ← "devices" key required
-    "DEVICE_NAME": {             // ← Device names become filenames
-      "hostname": "...",         // ← Used in templates
-      "connection": {            // ← Required for Netmiko, name "connection" MUST NOT BE CHANGED
+  "devices": {
+    "R1": {
+      "hostname": "R1",
+      "connection": {
         "device_type": "cisco_ios",
         "host": "192.168.1.1",
-        "username": "",          // ← Set via .env or prompt
-        "password": ""           // ← Set via prompt
+        "username": "",
+        "password": ""
       }
-      // Add your custom data here
     }
   }
 }
 ```
 
+**YAML** (`pseudoinventory.yaml`):
+```yaml
+devices:
+  R1:
+    hostname: R1
+    connection:
+      device_type: cisco_ios
+      host: 192.168.1.1
+      username: ""
+      password: ""
+```
+
+**The script auto-detects the format based on file extension** - use whichever you prefer. YAML is often more human-readable for complex configurations.
+
+#### Required Inventory Structure
+
+Regardless of format (JSON or YAML), these keys are **required**:
+```yaml
+devices:                    # ← "devices" key required
+  DEVICE_NAME:              # ← Device names become filenames
+    hostname: "..."         # ← Used in templates
+    connection:             # ← Required for Netmiko (name "connection" MUST NOT BE CHANGED)
+      device_type: cisco_ios
+      host: 192.168.1.1
+      username: ""          # ← Set via .env or prompt
+      password: ""          # ← Set via prompt
+    # Add your custom data here (bgp, ospf, vlans, etc.)
+```
+
+**Critical:** The `connection` dictionary is passed directly to Netmiko and must follow [Netmiko's connection parameters](https://github.com/ktbyers/netmiko#getting-started).
+
 ### To Customize Paths
 
 If you want different folder names or inventory files:
 
-**Edit these variables in `main_concurrency.py` (around line 190):**
+**Edit these variables in `main_concurrency.py` (around line 195):**
 ```python
+# Default paths
 inventorypath = os.path.join(base_dir, "..", "Inventory", "pseudoinventory.json")
 jinjafolderpath = os.path.join(base_dir, "..", "Templates")
 
-# Change to:
-inventorypath = os.path.join(base_dir, "..", "MyInventory", "devices.json")
+# Customize to:
+inventorypath = os.path.join(base_dir, "..", "MyInventory", "devices.yaml")  # JSON or YAML
 jinjafolderpath = os.path.join(base_dir, "..", "MyTemplates")
 ```
+
+**Note:** The script will auto-detect whether you're using `.json`, `.yaml`, or `.yml` files.
 
 ### Real-World Use Cases
 
