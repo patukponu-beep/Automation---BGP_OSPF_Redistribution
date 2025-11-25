@@ -87,11 +87,11 @@ def push_config(dev_data, commands):
     ssh_info = dev_data['connection']
 
     with ConnectHandler(**ssh_info) as conn:
-        conn.enable()  # Not always needed but best practice
+        # conn.enable()  # is unnecessary for other devices that is not Cisco (Final Script should be agnostic)
         output = conn.send_config_set(commands)
         # save_output = conn.save_config()  # or conn.send_command('write memory')
         # full_output = f"{output}----WRITE MEMORY----{save_output}"
-        # Commented out because I can...But also cuz of separation of concerns
+        # Commented out because I can...But also cuz of separation of concerns and vendor agnosticism
         # The script should be only be applying commands, not also saving to NVRAM
 
     return output
@@ -130,6 +130,7 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push, dry_run=F
         status_info['push_attempts'] = 0
         return status_info  # Because, this a dry run don't wanna continue with push_config
 
+    # The default bad_markers below are primarily for Cisco. IOS/NX-OS.
     bad_markers = [
         "invalid input detected",
         "bad ip address or host name",
@@ -140,7 +141,14 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push, dry_run=F
         "invalid input",
         "ambiguous command",
         "incomplete command"
-    ]
+    ]  # Include your include/edit with error-markers specific to your vendor network devices
+    # Example Junos (Juniper) markers you might add:
+    # bad_markers.extend([
+    #     "error: syntax error:",
+    #     "error: unrecognized command",
+    #     "error: mandatory statement missing",
+    #     "^---(syntax error)"
+    # ])
     for attempt in range(1, max_retries + 2):
         """Sets Up the Retry loop with Conditions"""
         status_info['push_attempts'] = attempt
@@ -180,6 +188,7 @@ def push_concurrent(dev_name, dev_data, commands, pre_push, post_push, dry_run=F
 
 
 def get_user_preference():
+    """Sets Up Interactive Deployment"""
     while True:
         print("\nSelect run mode:")
         print("Y - Dry Run (simulation only)")
@@ -208,7 +217,7 @@ def get_user_preference():
                     exit()  # exits all loops
                 elif confirm in ['back', 'b', 'return']:
                     print("Returning to main menu...")
-                    break  # exists just the 2nd loop to the 1st loop
+                    break  # exits just the 2nd loop to the 1st loop
                 else:
                     print("❌ Invalid input! Please enter 'yes', 'no', or 'back'.")
 
@@ -253,7 +262,8 @@ def main_concurrency(dry_run=False):
 
     if not username:
         if dry_run:
-            username = "dummy_password"
+            username = "dummy_password"  # Yeah I know, following convention it should be "dummy_username"
+            # but i aint changing it
         else:
             username = input("NETWORK USERNAME: ")
     password = None
