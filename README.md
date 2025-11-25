@@ -11,6 +11,7 @@ A production-grade network automation framework with **CI/CD pipeline**, **human
   - [🔄 Reusing This Framework for Other Projects](#-reusing-this-framework-for-other-projects)
     - [What You Can Change ✅](#what-you-can-change-)
       - [Templates (Full Flexibility)](#templates-full-flexibility)
+      - [Template Helpers and Custom Filters](#template-helpers-and-custom-filters)
       - [Inventory Data (Full Flexibility)](#inventory-data-full-flexibility)
     - [What Must Stay the Same ⚠️](#what-must-stay-the-same-️)
       - [File Structure (Required)](#file-structure-required)
@@ -143,6 +144,10 @@ See the Python script for reference.
 {% include 'vxlan.j2' %}
 {% include 'evpn.j2' %}
 ```
+#### Template Helpers and Custom Filters
+A custom Jinja filter, ipaddr, is registered to convert CIDR notation strings (e.g., 192.168.1.1/24) into callable IP address objects, allowing direct access to properties like **.ip** and **.netmask** within templates.
+This means that template authors can easily and reliably extract specific components (like the host IP, subnet mask, or network address) from a CIDR string using simple dot notation **(e.g., | ipaddr.netmask)**, simplifying network configuration generation significantly.
+
 
 #### Inventory Data (Full Flexibility)
 - ✅ Modify device-specific data to match your topology and Device Vendor
