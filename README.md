@@ -71,7 +71,7 @@ A production-grade network automation framework with **CI/CD pipeline**, **human
 |------|--------|-------|
 | **1. Clone and Navigate** | `git clone https://github.com/patukponu-beep/Automation---BGP_OSPF_Redistribution.git`<br>`cd Automation---BGP_OSPF_Redistribution` | Navigate to the project root where the virtual environment will sit. |
 | **2. Install** | `pip install jinja2 netmiko python-dotenv` | Installs required libraries into an isolated Python environment. |
-| **3. Activate Venv** | `.\venv\Scripts\activate` | Ensures the `python` command uses the correct interpreter with all dependencies installed. |
+| **3. Create & Activate Venv** | `python -m venv venv`<br>`.\venv\Scripts\activate` | Ensures the `python` command uses the correct interpreter with all dependencies installed. |
 | **4. Credentials and Inventory** | `export NET_USERNAME=your_username`<br>Update `Inventory/pseudoinventory.*` | Prepare connection data and configuration variables before execution. |
 | **5. Run Dry Run (Safe Validation)** | `python PythonCode/main_concurrency.py`<br>Choose **Y** for Dry Run | Renders configurations locally without connecting to devices. |
 | **6. Review Configs** | Check output in `Saved_render_config/pre_push/` | Verify rendered configurations before pushing anything. |
