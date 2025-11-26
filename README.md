@@ -1,6 +1,6 @@
 # Network_Automation_BGP_OSPF_Redistribution
 
-A production-grade network automation framework with **CI/CD pipeline**, **human-gated deployment**, and **concurrent execution** for network configuration management across Cisco infrastructure primarily. However, this can be utilised perfectly for other vendors with just a wee modification explained below.
+A production-grade network automation framework with **CI/CD pipeline**, **human-gated deployment**, and **concurrent execution** for network configuration management across Cisco infrastructure primarily. However, this can be utilised perfectly for other vendors with just a wee bit of modification explained below.
 
 - [Network\_Automation\_BGP\_OSPF\_Redistribution](#network_automation_bgp_ospf_redistribution)
   - [🖼️ Network Topology](#️-network-topology)
@@ -67,32 +67,16 @@ A production-grade network automation framework with **CI/CD pipeline**, **human
 
 ## 🚀 Quick Start
 ```bash
-# 1. Clone the repository
-git clone https://github.com/patukponu-beep/Automation---BGP_OSPF_Redistribution.git
-cd Automation---BGP_OSPF_Redistribution
 
-# 2. Install dependencies
-pip install jinja2 netmiko python-dotenv
-
-# 3. (Optional) Set credentials in .env or export
-export NET_USERNAME=your_username
-# If using a password environment variable (less secure than interactive prompt):
-export NET_PASSWORD=your_password 
-
-# 4. Prepare your lab environment
-# (You can use EVE-NG, CML, GNS3, physical routers, CSR1000v, etc.)
-# IMPORTANT: Update Inventory/pseudoinventory.json OR Inventory/pseudoinventory.yaml with YOUR device IPs.
-
-# 5. Run Dry Run (safe validation)
-python PythonCode/main_concurrency.py
-# Choose 'Y' for Dry Run mode
-
-# 6. Review rendered configs
-# Saved in: Saved_render_config/pre_push/
-
-# 7. Deploy to devices (after validation)
-python PythonCode/main_concurrency.py
-# Choose 'N' for Real Run, and confirm warnings
+| Step | Action | Notes |
+|------|--------|-------|
+| **1. Clone and Navigate** | `git clone https://github.com/patukponu-beep/Automation---BGP_OSPF_Redistribution.git`<br>`cd Automation---BGP_OSPF_Redistribution` | Navigate to the project root where the virtual environment will sit. |
+| **2. Install** | `pip install jinja2 netmiko python-dotenv` | Installs required libraries into an isolated Python environment. |
+| **3. Activate Venv** | `.\venv\Scripts\activate` | Ensures the `python` command uses the correct interpreter with all dependencies installed. |
+| **4. Credentials and Inventory** | `export NET_USERNAME=your_username`<br>Update `Inventory/pseudoinventory.*` | Prepare connection data and configuration variables before execution. |
+| **5. Run Dry Run (Safe Validation)** | `python PythonCode/main_concurrency.py`<br>Choose **Y** for Dry Run | Renders configurations locally without connecting to devices. |
+| **6. Review Configs** | Check output in `Saved_render_config/pre_push/` | Verify rendered configurations before pushing anything. |
+| **7. Deploy (Real Run)** | `python PythonCode/main_concurrency.py`<br>Choose **N** for Real Run and confirm warnings | Executes the concurrent configuration push after validation. |
 
 ```
 
@@ -235,19 +219,29 @@ devices:                    # ← "devices" key required
 
 **Critical:** The `connection` dictionary is passed directly to Netmiko and must follow [Netmiko's connection parameters](https://github.com/ktbyers/netmiko#getting-started).
 
-### To Customize Paths
+### To Customize Paths (Optional)
 
-If you want different folder names or inventory files:
+**HIGHLY RECOMMENDED**: Do NOT change file/folder names or inventory filename
 
-**Edit these variables in `main_concurrency.py` (around line 195):**
-```python
-# Default paths
-inventorypath = os.path.join(base_dir, "..", "Inventory", "pseudoinventory.json")
-jinjafolderpath = os.path.join(base_dir, "..", "Templates")
+Everything is deliberately hard-coded and interconnected:
 
-# Customize to:
-inventorypath = os.path.join(base_dir, "..", "MyInventory", "devices.yaml")  # JSON or YAML
-jinjafolderpath = os.path.join(base_dir, "..", "MyTemplates")
+- Inventory file **must** be named `pseudoinventory.yaml`, `.yml`, or `.json`  
+- Templates folder **must** stay `Templates`  
+- Output root **must** stay `Saved_render_config`  
+- `pre_push` and `post_push` subfolders are fixed  
+
+**Why?**  
+Because every single path in the script, CI workflow, and audit logic is wired together.  
+Changing any of them requires a full refactor across multiple files and function(s) — and one missed path breaks the entire audit trail, CI dry-run, or deployment.
+
+This is **not arbitrary**.  
+This is **intentional coupling for correctness and production safety**.
+
+If you need different names → fork and own the full refactor.  
+For 99 % of users (and all teams), just keep the default names.  
+It works. It’s proven. It’s battle-tested.
+
+Zero configuration = zero surprises.
 ```
 
 **Note:** The script will auto-detect whether you're using `.json`, `.yaml`, or `.yml` files.
@@ -438,7 +432,7 @@ pip install jinja2 netmiko python-dotenv
 pip install rich colorama
 ```
 
-**Python Version**: 3.7+
+**Python Version**: 3.8+ (tested up to 3.12)
 
 ---
 
@@ -465,37 +459,36 @@ python PythonCode/main_concurrency.py
   "devices": {
     "R1": {
       "hostname": "R1",
-      "connection": {
-        "device_type": "cisco_ios",
-        "host": "192.168.1.1",
-        "username": "",
-        "password": "",
-        "secret": "enable_password"
-      },
-      "interfaces": { 
-        "GigabitEthernet0/0": {
-          "ip": "10.1.1.1/24",
-          "description": "To R2"
-        }
-      },
+      "role": "edge_router",
+      "asn": 65001,
+      "loopback": "1.1.1.1/32",
+      "connection": { "device_type": "cisco_ios", "ip": "192.168.22.153", "username": "", "password": "", "secret": "" },
+      "links": [
+        { "name": "Gi0/1", "ip": "10.1.2.1/30", "desc": "to R2", "peer": "R2", "peer_intf": "Gi0/1" },
+        { "name": "Gi0/3", "ip": "10.1.3.1/30", "desc": "to R3", "peer": "R3", "peer_intf": "Gi0/3" }
+      ],
+      "sublinks": [
+        { "name": "Gi0/0.10", "vlan_id": 10, "ip": "192.168.1.254/24", "desc": "SITE1 VLAN10 gateway" },
+        { "name": "Gi0/0.20", "vlan_id": 20, "ip": "172.16.1.254/24", "desc": "SITE1 VLAN20 gateway" }
+      ],
+      "vlans": { "10": { "name": "VLAN10_SITE1" }, "20": { "name": "VLAN20_SITE1" } },
+      "ospf": { "process_id": 1, "area": 0, "ifaces": ["Gi0/0.10", "Gi0/0.20"] },
       "bgp": {
-        "asn": 65001,
-        "router_id": "1.1.1.1",
-        "neighbors": [...]
+        "neighbors": [
+          { "peer_ip": "10.1.2.2", "remote_as": 65002 },
+          { "peer_ip": "10.1.3.2", "remote_as": 65003 }
+        ],
+        "advertise_prefixes": ["192.168.1.0/24", "172.16.1.0/24"]
       },
-      "ospf": {
-        "process_id": 1,
-        "router_id": "1.1.1.1",
-        "networks": [...]
-      }
+      "redistribution": { "ospf_to_bgp": true, "bgp_to_ospf": true }
+        }
     }
-  }
 }
 ```
 
 ### Credentials (`.env` file)
 ```bash
-NET_USERNAME=*whatever you set your password to be on the file*
+NET_USERNAME=*whatever you set your SSH username to be on the file*
 # Password will be prompted interactively (more secure)
 ```
 
@@ -580,9 +573,11 @@ Code serves humans, not the other way around.
 - Run dry-run to validate before deploying
 
 ### "AUTH FAILURE"
-- Verify credentials in `.env` or when prompted
-- Check device SSH access (test with `ssh user@device`)
-- Confirm username/password/enable secret
+- Verify the **SSH username and password** (entered via prompt or `.env`)
+- Test connectivity manually:  
+  `ssh your_username@device_ip`
+- Ensure the user has **privilege level 15** (or sufficient rights to enter configuration mode)  
+  → This tool does **not** use or prompt for an enable secret. If you decide to use enable secret, add the secret key and value to devices['connection'][secret] of the inventory.
 
 ### "TIMEOUT"
 - Check network connectivity to devices
@@ -607,7 +602,6 @@ Code serves humans, not the other way around.
 
 ---
 
-
 ## 🤝 Contributing
 
 Contributions welcome! Please:
@@ -626,7 +620,6 @@ Contributions welcome! Please:
 - Network Engineer|CCNP Enterprise|Cyber Security Specialist|
 - **LinkedIn**: https://www.linkedin.com/in/patrick-u-78a001176/
 - **Email**: pat.ukponu@gmail.com
-
 
 ---
 
