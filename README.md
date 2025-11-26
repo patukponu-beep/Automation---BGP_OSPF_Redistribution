@@ -66,7 +66,6 @@ A production-grade network automation framework with **CI/CD pipeline**, **human
 ---
 
 ## 🚀 Quick Start
-```bash
 
 | Step | Action | Notes |
 |------|--------|-------|
@@ -77,8 +76,6 @@ A production-grade network automation framework with **CI/CD pipeline**, **human
 | **5. Run Dry Run (Safe Validation)** | `python PythonCode/main_concurrency.py`<br>Choose **Y** for Dry Run | Renders configurations locally without connecting to devices. |
 | **6. Review Configs** | Check output in `Saved_render_config/pre_push/` | Verify rendered configurations before pushing anything. |
 | **7. Deploy (Real Run)** | `python PythonCode/main_concurrency.py`<br>Choose **N** for Real Run and confirm warnings | Executes the concurrent configuration push after validation. |
-
-```
 
 ---
 
@@ -242,7 +239,6 @@ For 99 % of users (and all teams), just keep the default names.
 It works. It’s proven. It’s battle-tested.
 
 Zero configuration = zero surprises.
-```
 
 **Note:** The script will auto-detect whether you're using `.json`, `.yaml`, or `.yml` files.
 
