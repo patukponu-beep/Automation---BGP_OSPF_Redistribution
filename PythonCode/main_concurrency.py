@@ -3,6 +3,7 @@ import yaml
 import os
 import time
 import getpass
+from pathlib import Path
 from ipaddress import ip_interface
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -17,30 +18,31 @@ RETRY_DELAY = 3  # seconds between retries
 
 
 def load_inventory(inventorypath):
-    """Loading Inventory from JSON or YAML file"""
-    if not os.path.exists(inventorypath):
-        raise FileNotFoundError(f"Inventory file not found: {inventorypath}")
+    inventory = None
+    myinventory = Path(inventorypath)
+    ext = myinventory.suffix.lower()
 
-    _, ext = os.path.splitext(inventorypath)
+    if not myinventory.exists():
+        print(f"Inventory file {myinventory} not found")
+        return None
 
-    with open(inventorypath, 'r') as f:
-        if ext.lower() in ['.yaml', '.yml']:
-            print(f"📄 Loading inventory from YAML: {os.path.basename(inventorypath)}")
-            try:
-                inventory = yaml.safe_load(f)
-            except yaml.YAMLError as e:
-                raise ValueError(f"Invalid YAML format: {e}")
-        elif ext.lower() == '.json':
-            print(f"📄 Loading inventory from JSON: {os.path.basename(inventorypath)}")
-            try:
-                inventory = json.load(f)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON format: {e}")
-        else:
-            raise ValueError(f"Unsupported file format: {ext}. Use .json, .yaml, or .yml")
+    try:
+        with myinventory.open("r") as l:
+            if ext in ['.yml', '.yaml']:
+                inventory = yaml.safe_load(l)
+            elif ext == '.json':
+                inventory = json.load(l)
+            else:
+                print(f"Unsupported file type: {ext}")
+                return None
+    except (yaml.YAMLError, json.JSONDecodeError) as e:
+        raise ValueError(f"File type not found: {e}")
+    except Exception as e:
+        print(f"Unknown error occurred: {e}")
+        return None
 
     if 'devices' not in inventory:
-        raise ValueError("Inventory must contain 'devices' key")
+        raise ValueError(f"Inventory structure error: Missing 'devices' key")
 
     return inventory
 
